@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/kotlinExpr.iml" filepath="$PROJECT_DIR$/.idea/modules/kotlinExpr.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/kotlinExpr_main.iml" filepath="$PROJECT_DIR$/.idea/modules/kotlinExpr_main.iml" group="kotlinExpr" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/kotlinExpr_test.iml" filepath="$PROJECT_DIR$/.idea/modules/kotlinExpr_test.iml" group="kotlinExpr" />
+    </modules>
+  </component>
+</project>
