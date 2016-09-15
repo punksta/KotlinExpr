@@ -2,25 +2,59 @@
  * Created by punksta on 15.09.16.
  */
 
-fun solve(p1: Expr, context: Map<String, Expr?  >? = null) : Expr.Const = when (p1) {
-    is Expr.Const -> p1
-    is Expr.Mult -> when {
-        p1.left.isNull() or p1.right.isNull()-> const(0)
-        p1.left.isNan() or p1.right.isNan()-> Expr.NAN
-        else -> const(solve(p1.left, context).c * solve(p1.right, context).c)
-    }
-    is Expr.Sum -> when  {
-        (p1.left.isNan() or p1.right.isNan())-> Expr.NAN
-        else -> const(solve(p1.left, context).c + solve(p1.right, context).c)
-    }
+sealed class Result {
+    class Error(val message: String, val expr: Expr) : Result()
+    class Some(val const: Expr.Const) : Result()
+    object Nan : Result()
+}
+
+fun some(expr: Expr.Const) = Result.Some(expr)
+fun error(message: String, expr: Expr) = Result.Error(message, expr)
+fun nan() = Result.Nan
+
+
+fun solve(p1: Expr, context: Map<String, Expr?>? = null) : Result = when(p1) {
+    is Expr.Const -> some(p1)
+
+    is Expr.Let -> solve(p1.expr, context.orEmpty() + Pair(p1.name, p1.value))
+
     is Expr.Var -> context?.get(p1.name).let {
-        if (it == null) {
-            throw IllegalArgumentException("undefined var ${p1.name}")
-        } else {
-            solve(it, context.orEmpty().filter { it.key != p1.name })
-        }
+        if (it == null)
+            error("undefined var ${p1.name}", p1)
+        else
+            solve(it, context)
     }
-    is Expr.Let -> (context.orEmpty() + Pair(p1.name, p1.value)).let {
-        solve(p1.expr, it)
+
+    is Expr.Div -> solve(p1.left, context).let { r1 ->
+        if (r1 is Result.Some)
+            solve(p1.right, context).let { r2 ->
+                if (r2 is Result.Some)
+                    if (r2.const.isNull()) nan() else some(const(r1.const.c / r2.const.c))
+                else r2
+            }
+        else r1
+    }
+
+    is Expr.Sum -> solve(p1.left, context).let { r1 ->
+        if (r1 is Result.Some)
+            solve(p1.right, context).let { r2 ->
+                if (r2 is Result.Some)
+                    some(const(r1.const.c + r2.const.c))
+                else
+                    r2
+            }
+        else
+            r1
+    }
+    is Expr.Mult -> with(solve(p1.left, context)) {
+        if (this is Result.Some)
+            solve(p1.right, context).let { r2 ->
+                if (r2 is Result.Some)
+                    some(const(this.const.c*r2.const.c))
+                else
+                    r2
+            }
+        else
+            this
     }
 }
