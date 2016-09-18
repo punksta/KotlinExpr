@@ -4,7 +4,8 @@
 
 
 sealed class Expr {
-    open class Const(val c: Int): Expr()
+    open class Const(val c: Number): Expr()
+
     class Var(val name : String) : Expr()
 
     class Sum(val left : Expr, val right: Expr) : Expr()

@@ -14,7 +14,11 @@ fun nan() = Result.Nan
 
 
 fun solve(p1: Expr, context: Map<String, Expr?>? = null) : Result = when(p1) {
-    is Expr.Const -> some(p1)
+    is Expr.Const -> when (p1.c) {
+        is Double -> if (p1.c.isNaN()) nan() else some(p1)
+        is Float -> if (p1.c.isNaN()) nan() else some(p1)
+        else -> some(p1)
+    }
     is Expr.Let -> solve(p1.expr, context.orEmpty() + (p1.name to p1.value))
     is Expr.Var -> context?.get(p1.name).let {
         if (it == null)

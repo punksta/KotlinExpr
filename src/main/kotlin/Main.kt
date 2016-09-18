@@ -15,12 +15,12 @@ fun logSolve(expr: Expr) {
 fun main(args: Array<String>) {
     listOf<Expr>(
             variable("hello") * variable("habr") * 3  where ("hello" to 1) and ("habr" to 2),
-            (const(1) + const(2)) * const(3),
+            (const(1) + const(2)) * const(3.5F),
             "x".let(10) inExr ("y".let(100) inExr (variable("x") + variable("y"))),
             (variable("x") * variable("x") * 2) where ("x" to 2),
             "x" let (1) inExr (variable("x") + (variable("x") where ("x" to 2))),
             "x" let (0) inExr (variable("x") * 1000 + variable("x")),
-            (variable("x") * const(2) / 3)
+            (variable("x") * const(2F) / 3F)
     ).forEach { logSolve(it) }
 
 }
