@@ -15,46 +15,32 @@ fun nan() = Result.Nan
 
 fun solve(p1: Expr, context: Map<String, Expr?>? = null) : Result = when(p1) {
     is Expr.Const -> some(p1)
-
-    is Expr.Let -> solve(p1.expr, context.orEmpty() + Pair(p1.name, p1.value))
-
+    is Expr.Let -> solve(p1.expr, context.orEmpty() + (p1.name to p1.value))
     is Expr.Var -> context?.get(p1.name).let {
         if (it == null)
             error("undefined var ${p1.name}", p1)
         else
             solve(it, context)
     }
-
-    is Expr.Div -> solve(p1.left, context).let { r1 ->
-        if (r1 is Result.Some)
-            solve(p1.right, context).let { r2 ->
-                if (r2 is Result.Some)
-                    if (r2.const.isNull()) nan() else some(const(r1.const.c / r2.const.c))
-                else r2
-            }
-        else r1
-    }
-
-    is Expr.Sum -> solve(p1.left, context).let { r1 ->
-        if (r1 is Result.Some)
-            solve(p1.right, context).let { r2 ->
-                if (r2 is Result.Some)
-                    some(const(r1.const.c + r2.const.c))
+    is Expr.Div -> solve(p1.left, context).applyIfSome { r1 ->
+            solve(p1.right, context).applyIfSome { r2 ->
+                if (r2.const.isNull())
+                        nan()
                 else
-                    r2
+                    some(r1.const / r2.const)
             }
-        else
-            r1
     }
-    is Expr.Mult -> with(solve(p1.left, context)) {
-        if (this is Result.Some)
-            solve(p1.right, context).let { r2 ->
-                if (r2 is Result.Some)
-                    some(const(this.const.c*r2.const.c))
-                else
-                    r2
+    is Expr.Sum -> solve(p1.left, context).applyIfSome { r1 ->
+            solve(p1.right, context).applyIfSome { r2 ->
+                    some(r1.const + r2.const)
             }
-        else
-            this
+    }
+    is Expr.Mult -> solve(p1.left, context).applyIfSome { r1->
+            solve(p1.right, context).applyIfSome { r2 ->
+                    some(r1.const * r2.const)
+            }
     }
 }
+
+private fun Result.applyIfSome(apply: (Result.Some) -> Result) : Result
+        = if (this is Result.Some) apply(this) else this

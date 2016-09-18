@@ -20,6 +20,11 @@ infix operator fun Expr.div(expr: Int): Expr = Expr.Div(this, const(expr))
 infix operator fun Expr.div(expr: String) : Expr = Expr.Div(this, Expr.Var(expr))
 
 
+infix operator fun Expr.Const.plus(expr: Expr.Const) : Expr.Const = const(this.c + expr.c)
+infix operator fun Expr.Const.times(expr: Expr.Const) : Expr.Const = const(this.c * expr.c)
+infix operator fun Expr.Const.div(expr: Expr.Const) : Expr.Const = const(this.c / expr.c)
+
+
 //where
 infix fun Expr.where(pair: Pair<String, Expr>) = Expr.Let(pair.first, pair.second, this)
 @JvmName("whereInt")
