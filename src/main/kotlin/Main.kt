@@ -20,7 +20,14 @@ fun main(args: Array<String>) {
             (variable("x") * variable("x") * 2) where ("x" to 2),
             "x" let (1) inExr (variable("x") + (variable("x") where ("x" to 2))),
             "x" let (0) inExr (variable("x") * 1000 + variable("x")),
-            (variable("x") * const(2F) / 3F)
+            (variable("x") * const(2F) / 3F),
+
+            ifE(const(1), BoolKey.Less, const(2)) {
+                variable("helloHabr")
+            } ifFalse {
+                const(1) * const(123F)
+            } where ("helloHabr" to 2016)
+
     ).forEach { logSolve(it) }
 
 }

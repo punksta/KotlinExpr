@@ -44,6 +44,15 @@ fun solve(p1: Expr, context: Map<String, Expr?>? = null) : Result = when(p1) {
                     some(r1.const * r2.const)
             }
     }
+    is Expr.If -> solve(p1.be.expr1).applyIfSome { r1 ->
+        solve(p1.be.expr2).applyIfSome { r2 ->
+            (if (checkBoolExpr(p1.be.key, r1.const, r2.const))
+                p1.ifTrue
+            else p1.ifFalse).let { e ->
+                solve(e, context)
+            }
+        }
+    }
 }
 
 private fun Result.applyIfSome(apply: (Result.Some) -> Result) : Result
