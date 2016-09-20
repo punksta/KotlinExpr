@@ -2,25 +2,58 @@
  * Created by punksta on 15.09.16.
  */
 
-fun solve(p1: Expr, context: Map<String, Expr?  >? = null) : Expr.Const = when (p1) {
-    is Expr.Const -> p1
-    is Expr.Mult -> when {
-        p1.left.isNull() or p1.right.isNull()-> const(0)
-        p1.left.isNan() or p1.right.isNan()-> Expr.NAN
-        else -> const(solve(p1.left, context).c * solve(p1.right, context).c)
+sealed class Result {
+    class Error(val message: String, val expr: Expr) : Result()
+    class Some(val const: Expr.Const) : Result()
+    object Nan : Result()
+}
+
+fun some(expr: Expr.Const) = Result.Some(expr)
+fun error(message: String, expr: Expr) = Result.Error(message, expr)
+fun nan() = Result.Nan
+
+
+fun solve(p1: Expr, context: Map<String, Expr?>? = null) : Result = when(p1) {
+    is Expr.Const -> when (p1.c) {
+        is Double -> if (p1.c.isNaN()) nan() else some(p1)
+        is Float -> if (p1.c.isNaN()) nan() else some(p1)
+        else -> some(p1)
     }
-    is Expr.Sum -> when  {
-        (p1.left.isNan() or p1.right.isNan())-> Expr.NAN
-        else -> const(solve(p1.left, context).c + solve(p1.right, context).c)
-    }
+    is Expr.Let -> solve(p1.expr, context.orEmpty() + (p1.name to p1.value))
     is Expr.Var -> context?.get(p1.name).let {
-        if (it == null) {
-            throw IllegalArgumentException("undefined var ${p1.name}")
-        } else {
-            solve(it, context.orEmpty().filter { it.key != p1.name })
+        if (it == null)
+            error("undefined var ${p1.name}", p1)
+        else
+            solve(it, context)
+    }
+    is Expr.Div -> solve(p1.left, context).applyIfSome { r1 ->
+            solve(p1.right, context).applyIfSome { r2 ->
+                if (r2.const.isNull())
+                        nan()
+                else
+                    some(r1.const / r2.const)
+            }
+    }
+    is Expr.Sum -> solve(p1.left, context).applyIfSome { r1 ->
+            solve(p1.right, context).applyIfSome { r2 ->
+                    some(r1.const + r2.const)
+            }
+    }
+    is Expr.Mult -> solve(p1.left, context).applyIfSome { r1->
+            solve(p1.right, context).applyIfSome { r2 ->
+                    some(r1.const * r2.const)
+            }
+    }
+    is Expr.If -> solve(p1.be.expr1).applyIfSome { r1 ->
+        solve(p1.be.expr2).applyIfSome { r2 ->
+            (if (checkBoolExpr(p1.be.key, r1.const, r2.const))
+                p1.ifTrue
+            else p1.ifFalse).let { e ->
+                solve(e, context)
+            }
         }
     }
-    is Expr.Let -> (context.orEmpty() + Pair(p1.name, p1.value)).let {
-        solve(p1.expr, it)
-    }
 }
+
+private fun Result.applyIfSome(apply: (Result.Some) -> Result) : Result
+        = if (this is Result.Some) apply(this) else this
